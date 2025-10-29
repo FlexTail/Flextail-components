@@ -1,60 +1,79 @@
 [
   {
-    "name": "Button",
+    "name": "flextail-utils",
+    "type": "utility",
+    "description": "Shared styles, types, and utility functions (cn) for all components.",
+    "deps": [],
+    "files": [
+      {
+        "name": "flextail-utils.ts",
+        "target_path": "components/config/flextail-utils.ts",
+        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/config/flextail-utils.ts"
+      }
+    ]
+  },
+  {
+    "name": "button",
     "type": "components:ui",
     "description": "A button and anchor component for user interaction.",
-    "dependencies": [],
+    "deps": ["flextail-utils"],
     "files": [
       {
         "name": "Button.tsx",
         "target_path": "components/ui/Button.tsx",
-        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/Button.tsx"
-      }
-    ]
-  },
-  {
-    "name": "NotFound",
-    "description": "A 404 Not Found Page.",
-    "files": [
-      {
-        "target_path": "components/ui/Button.tsx",
-        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/Button.tsx"
-      },
-      {
-        "target_path": "components/layouts/NotFound.tsx",
-        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/NotFound.tsx"
-      }
-    ]
-  },
-  {
-    "name": "card",
-    "description": "A content container that includes a primary action button.",
-    "files": [
-      {
-        "target_path": "components/ui/Button.tsx",
-        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/Button.tsx"
-      },
-      {
-        "target_path": "components/ui/AlertDialog.tsx",
-        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/AlertDialog.tsx"
-      },
-      {
-        "target_path": "components/ui/Card.tsx",
-        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/Card.tsx"
+        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/ui/Button.tsx"
       }
     ]
   },
   {
     "name": "alert",
-    "description": "A content container that includes a primary action button.",
+    "type": "components:ui",
+    "description": "A block for displaying status messages, warnings, or confirmations.",
+    "deps": ["flextail-utils", "button"],
     "files": [
       {
-        "target_path": "components/ui/Button.tsx",
-        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/Button.tsx"
-      },
+        "name": "Alert.tsx",
+        "target_path": "components/ui/Alert.tsx",
+        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/ui/Alert.tsx"
+      }
+    ]
+  },
+  {
+    "name": "notfound",
+    "type": "components:layout",
+    "description": "A 404 Not Found Page.",
+    "deps": ["flextail-utils", "button"],
+    "files": [
       {
+        "name": "NotFound.tsx",
+        "target_path": "components/layouts/NotFound.tsx",
+        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/layouts/NotFound.tsx"
+      }
+    ]
+  },
+  {
+    "name": "card",
+    "type": "components:ui",
+    "description": "A content container that includes a primary action button.",
+    "deps": ["flextail-utils", "button", "alertdialog"],
+    "files": [
+      {
+        "name": "Card.tsx",
+        "target_path": "components/ui/Card.tsx",
+        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/ui/Card.tsx"
+      }
+    ]
+  },
+  {
+    "name": "alertdialog",
+    "type": "components:ui",
+    "description": "A modal dialog for confirmations or critical alerts.",
+    "deps": ["flextail-utils", "button"],
+    "files": [
+      {
+        "name": "AlertDialog.tsx",
         "target_path": "components/ui/AlertDialog.tsx",
-        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/AlertDialog.tsx"
+        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/ui/AlertDialog.tsx"
       }
     ]
   }
