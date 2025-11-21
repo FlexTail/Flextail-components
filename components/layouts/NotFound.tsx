@@ -1,3 +1,7 @@
+// --- NotFound.tsx  ---
+
+"use client";
+
 import React, {
   forwardRef,
   type HTMLAttributes,

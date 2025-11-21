@@ -1,374 +1,269 @@
 "use client";
 
-import React, {
-  forwardRef,
-  useEffect,
-  useState,
-  ReactElement,
-  JSXElementConstructor,
-  useContext,
-  Children,
-} from "react";
+import React from "react";
+import { Check, X, AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
 import {
+  type TailwindColor,
+  BUTTON_SIZES,
+  ROUNDED_VALUES,
+  getColorClass,
+  ICON_SIZES,
   cn,
-  LoadingSpinnerSVG,
-  Plus,
-  X,
-  Check,
-  Danger,
-  baseStyles,
-  shapeStyles,
-  buttonSizeStyles,
-  iconSizeStyles,
-  iconImageSizeStyles,
-  getButtonClasses,
-  IconDualSource,
-  IconProp,
-  ButtonVariant,
-  ButtonShape,
-  ButtonSize,
-  ButtonColor,
-  ButtonType,
-  OptimizedImageProps,
-} from "../config/flextail-utils"
+} from "../utils/FlexTail-config";
 
-const isIconDualSource = (icon: any): icon is IconDualSource => {
-  return (
-    typeof icon === "object" &&
-    icon !== null &&
-    ("light" in icon || "dark" in icon)
-  );
-};
+type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "outline"
+  | "ghost"
+  | "link"
+  | "grayscale"
+  | "binary";
+type PresetType = "submit" | "cancel" | "delete" | "next" | "loading";
 
-const isOptimizedImageProps = (source: any): source is OptimizedImageProps => {
-  return (
-    typeof source === "object" &&
-    source !== null &&
-    "src" in source &&
-    typeof source.src === "string"
-  );
-};
-
-interface CommonProps {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  color?: TailwindColor | string;
   variant?: ButtonVariant;
-  shape?: ButtonShape;
-  loading?: boolean;
-  icon?: IconProp;
-  iconPosition?: "left" | "right" | "top" | "bottom";
-  color?: ButtonColor;
-  className?: string;
-  children: React.ReactNode;
-  iconSize?: ButtonSize;
-  alt?: string;
   disabled?: boolean;
-  size?: ButtonSize;
-  type?: ButtonType;
+  size?: keyof typeof BUTTON_SIZES;
+  radius?: keyof typeof ROUNDED_VALUES | string;
+  groupPosition?: "left" | "right" | "middle";
+  groupDirection?: "vertical" | "horizontal";
+  active?: boolean;
+  activeColor?: TailwindColor | string;
+  href?: string;
+  icon?: React.ReactNode | React.ElementType;
+  iconPosition?: "top" | "bottom" | "left" | "right";
+  iconSize?: string;
+  alt?: string;
+  preset?: PresetType;
+  children?: React.ReactNode;
 }
 
-interface ButtonAsButtonProps
-  extends CommonProps,
-    Omit<
-      React.ButtonHTMLAttributes<HTMLButtonElement>,
-      "onClick" | "children" | "disabled" | "color" | "type"
-    > {
-  href?: never;
-  onClick?: React.MouseEventHandler<HTMLButtonElement>;
-}
-
-interface ButtonAsAnchorProps
-  extends CommonProps,
-    Omit<
-      React.AnchorHTMLAttributes<HTMLAnchorElement>,
-      "onClick" | "children" | "color" | "type"
-    > {
-  href: string;
-  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
-}
-
-export type ButtonProps = ButtonAsButtonProps | ButtonAsAnchorProps;
-
-interface ButtonGroupContextProps {
-  isGrouped: boolean;
-  groupPosition: "first" | "middle" | "last" | "single" | null;
-}
-
-const ButtonGroupContext = React.createContext<ButtonGroupContextProps>({
-  isGrouped: false,
-  groupPosition: null,
-});
-
-interface ButtonGroupProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
-}
-
-const ButtonGroup: React.FC<ButtonGroupProps> = ({
-  children,
-  className = "",
-  ...rest
-}) => {
-  const buttons = Children.toArray(children).filter(
-    (child) => React.isValidElement(child) && (child.type as any) === Button
-  );
-
-  if (buttons.length === 0) return null;
-
-  return (
-    <div
-      className={cn(
-        "inline-flex rounded-xl shadow-md overflow-hidden",
-        className
-      )}
-      role="group"
-      {...rest}
-    >
-      {buttons.map((child, index) => {
-        let groupPosition: ButtonGroupContextProps["groupPosition"] = "middle";
-        if (buttons.length === 1) {
-          groupPosition = "single";
-        } else if (index === 0) {
-          groupPosition = "first";
-        } else if (index === buttons.length - 1) {
-          groupPosition = "last";
-        }
-
-        const contextValue: ButtonGroupContextProps = {
-          isGrouped: true,
-          groupPosition: groupPosition,
-        };
-
-        return (
-          <ButtonGroupContext.Provider key={index} value={contextValue}>
-            {child}
-          </ButtonGroupContext.Provider>
-        );
-      })}
-    </div>
-  );
+const PRESETS: Record<string, Partial<ButtonProps>> = {
+  submit: {
+    children: "Submit",
+    icon: <Check />,
+    color: "emerald",
+    variant: "primary",
+  },
+  cancel: { children: "Cancel", icon: <X />, color: "slate", variant: "ghost" },
+  delete: {
+    children: "Delete",
+    icon: <AlertTriangle />,
+    color: "rose",
+    variant: "primary",
+  },
+  next: {
+    children: "Next",
+    icon: <ArrowRight />,
+    iconPosition: "right",
+    color: "blue",
+    variant: "secondary",
+  },
+  loading: {
+    children: "Processing...",
+    icon: <Loader2 />,
+    color: "indigo",
+    variant: "secondary",
+    disabled: true,
+  },
 };
 
-const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
-  (props, ref) => {
-    const {
+export const Button = React.forwardRef<
+  HTMLButtonElement | HTMLAnchorElement,
+  ButtonProps
+>(
+  (
+    {
+      color = "indigo",
       variant = "primary",
-      shape = "squircle",
-      loading = false,
-      icon,
-      iconPosition = "left",
-      color = "blue",
-      children,
       disabled = false,
-      className = "",
-      onClick,
-      iconSize = "md",
-      alt,
       size = "md",
+      radius = "md",
+      groupPosition,
+      groupDirection = "horizontal",
+      active = false,
+      activeColor,
       href,
-      type = "default",
-      ...rest
-    } = props;
+      icon: IconProp,
+      iconPosition = "left",
+      iconSize,
+      alt,
+      preset,
+      className,
+      children,
+      style,
+      type: htmlType = "button",
+      ...props
+    },
+    ref
+  ) => {
+    const activeConfig = preset
+      ? { ...PRESETS[preset] }
+      : { color, variant, children, icon: IconProp, iconPosition };
 
-    const { isGrouped, groupPosition } = useContext(ButtonGroupContext);
+    // Active State Management
+    const isGrouped = !!groupPosition;
+    const isActiveState = active && isGrouped;
 
-    const [darkMode, setDarkMode] = useState(false);
+    let finalColor = activeConfig.color || color;
+    let finalVariant = activeConfig.variant || variant;
 
-    useEffect(() => {
-      if (typeof document === "undefined") return;
-
-      const checkDarkMode = () => {
-        setDarkMode(document.documentElement.classList.contains("dark"));
-      };
-
-      checkDarkMode();
-
-      const observer = new MutationObserver((mutationsList) => {
-        for (const mutation of mutationsList) {
-          if (mutation.attributeName === "class") {
-            checkDarkMode();
-            return;
-          }
-        }
-      });
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ["class"],
-      });
-
-      return () => observer.disconnect();
-    }, []);
-
-    const isDisabled = disabled || loading;
-
-    const variantClass = getButtonClasses(variant, color, type, isDisabled);
-
-    const buttonSizeClass = buttonSizeStyles[size] || buttonSizeStyles.md;
-
-    const isFullyRounded =
-      groupPosition === "single" ||
-      variant === "ghost" ||
-      variant === "link" ||
-      !isGrouped;
-
-    let shapeClass = shapeStyles[shape];
-
-    if (isGrouped && !isFullyRounded) {
-      let roundedClass = "rounded-none";
-      if (groupPosition === "first") {
-        roundedClass =
-          shape === "circle"
-            ? "rounded-l-full"
-            : shape === "squircle"
-            ? "rounded-l-xl"
-            : "rounded-l-lg";
-      } else if (groupPosition === "last") {
-        roundedClass =
-          shape === "circle"
-            ? "rounded-r-full"
-            : shape === "squircle"
-            ? "rounded-r-xl"
-            : "rounded-r-lg";
+    if (isActiveState) {
+      if (activeColor) finalColor = activeColor;
+      if (finalVariant !== "binary" && finalVariant !== "grayscale") {
+        finalVariant = "primary";
       }
-
-      shapeClass = cn(
-        groupPosition !== "last" &&
-          "border-r border-white/40 dark:border-black/30",
-        roundedClass
-      );
     }
 
-    const finalClassName = cn(
-      baseStyles,
-      variantClass,
-      shapeClass,
-      className,
-      buttonSizeClass
+    const finalChildren = activeConfig.children || children;
+    const FinalIcon = activeConfig.icon || IconProp;
+    const finalIconPos = activeConfig.iconPosition || iconPosition;
+
+    const { className: colorClasses, style: colorStyles } = getColorClass(
+      finalColor as string,
+      finalVariant
     );
 
-    const renderIcon = (): React.ReactNode => {
-      if (loading) {
-        const sizeClass = iconSizeStyles[iconSize] || iconSizeStyles.md;
-        return <LoadingSpinnerSVG className={sizeClass} />;
+    const isVertical = groupDirection === "vertical";
+
+    const radiusClass = (() => {
+      if (groupPosition === "middle") return "rounded-none";
+      const baseRadius =
+        ROUNDED_VALUES[radius as keyof typeof ROUNDED_VALUES] ||
+        `rounded-[${radius}]`;
+      if (groupPosition === "left")
+        return isVertical ? "rounded-b-none" : "rounded-r-none";
+      if (groupPosition === "right")
+        return isVertical ? "rounded-t-none" : "rounded-l-none";
+      return baseRadius;
+    })();
+
+    const groupSpacing = (() => {
+      if (!groupPosition) return "";
+      if (groupPosition === "middle")
+        return isVertical ? "border-y-0 my-0" : "border-x-0 mx-0";
+      if (groupPosition === "left")
+        return isVertical ? "mb-0 border-b-0" : "mr-0 border-r-0";
+      if (groupPosition === "right")
+        return isVertical ? "mt-0 border-t-0" : "ml-0 border-l-0";
+      return "";
+    })();
+
+    const baseStyles =
+      "inline-flex items-center justify-center font-medium transition-all duration-300 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
+    const sizeClasses =
+      BUTTON_SIZES[size as keyof typeof BUTTON_SIZES] || "p-3";
+    const iconSizeStyle =
+      iconSize || ICON_SIZES[size as keyof typeof ICON_SIZES] || "1rem";
+    const flexDirection =
+      finalIconPos === "top"
+        ? "flex-col"
+        : finalIconPos === "bottom"
+        ? "flex-col-reverse"
+        : finalIconPos === "right"
+        ? "flex-row-reverse"
+        : "flex-row";
+    const gapSize = size === "xs" ? "gap-1.5" : "gap-2";
+
+    const computedClassName = cn(
+      baseStyles,
+      sizeClasses,
+      radiusClass,
+      disabled
+        ? "bg-neutral-200 text-neutral-400 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-600 dark:border-neutral-800 shadow-none"
+        : colorClasses,
+      groupSpacing,
+      flexDirection,
+      gapSize,
+      isActiveState
+        ? "z-10 relative ring-2 ring-offset-1 ring-transparent"
+        : "",
+      className
+    );
+
+    const mergedStyles = { ...colorStyles, ...style };
+
+    const renderIcon = () => {
+      if (!FinalIcon) return null;
+
+      const iconClass = preset === "loading" ? "animate-spin" : "";
+      const commonStyles = {
+        width: iconSizeStyle,
+        height: iconSizeStyle,
+        animation: preset === "loading" ? "spin 1s linear infinite" : "none",
+      };
+
+      // 1. React Element (e.g., <Star />)
+      if (React.isValidElement(FinalIcon)) {
+        return React.cloneElement(FinalIcon as React.ReactElement<any>, {
+          style: { ...commonStyles, ...(FinalIcon.props as any).style },
+          className: cn(iconClass, (FinalIcon.props as any).className),
+          "aria-hidden": "true",
+        });
       }
 
-      let currentIcon: IconProp = icon;
-      let implicitIcon: React.ReactNode = null;
-
-      if (!currentIcon) {
-        const sizeClass = iconSizeStyles[iconSize] || iconSizeStyles.md;
-        switch (type) {
-          case "add":
-            implicitIcon = <Plus className={sizeClass} />;
-            break;
-          case "error":
-            implicitIcon = <X className={sizeClass} />;
-            break;
-          case "accept":
-            implicitIcon = <Check className={sizeClass} />;
-            break;
-          case "danger":
-            implicitIcon = <Danger className={sizeClass} />;
-            break;
-          default:
-            return null;
-        }
-      }
-
-      currentIcon = currentIcon || implicitIcon;
-
-      if (isIconDualSource(currentIcon)) {
-        currentIcon = darkMode
-          ? currentIcon.dark || currentIcon.light
-          : currentIcon.light || currentIcon.dark;
-      }
-
-      if (!currentIcon) return null;
-
-      const sizeClass = iconSizeStyles[iconSize] || iconSizeStyles.md;
-      const imageSizeClass =
-        iconImageSizeStyles[iconSize] || iconImageSizeStyles.md;
-
-      if (
-        isOptimizedImageProps(currentIcon) ||
-        typeof currentIcon === "string"
-      ) {
-        const src = isOptimizedImageProps(currentIcon)
-          ? currentIcon.src
-          : (currentIcon as string);
+      // 2. Component Function (e.g., Star)
+      if (typeof FinalIcon === "function") {
+        const IconComp = FinalIcon as React.ElementType;
         return (
-          <img
-            src={src}
-            alt={alt || "Button icon"}
-            className={imageSizeClass}
+          <IconComp
+            style={commonStyles}
+            className={iconClass}
+            aria-hidden="true"
           />
         );
       }
 
-      if (React.isValidElement(currentIcon)) {
-        const iconElement = currentIcon as ReactElement<
-          { className?: string },
-          string | JSXElementConstructor<any>
-        >;
-        return React.cloneElement(iconElement, {
-          className: cn(iconElement.props.className, sizeClass),
-        });
-      }
-
-      return currentIcon as React.ReactNode;
+      // 3. Image URL (String)
+      return (
+        <img
+          src={FinalIcon as string}
+          alt=""
+          style={{ ...commonStyles, objectFit: "contain" }}
+          className={iconClass}
+          aria-hidden="true"
+        />
+      );
     };
 
-    const finalIconElement = renderIcon();
-
-    const directionClass =
-      iconPosition === "top" || iconPosition === "bottom"
-        ? "flex-col"
-        : "flex-row";
-
-    const gapClass = finalIconElement && children ? "gap-2" : "";
-
-    const content = (
-      <div
-        className={cn(
-          "flex items-center justify-center",
-          directionClass,
-          gapClass
-        )}
-      >
-        {finalIconElement &&
-          (iconPosition === "left" || iconPosition === "top") &&
-          finalIconElement}
-        {children}
-        {finalIconElement &&
-          (iconPosition === "right" || iconPosition === "bottom") &&
-          finalIconElement}
-      </div>
-    );
-
-    const Element = href ? "a" : "button";
-    const elementProps = {
-      ref: ref,
-      className: finalClassName,
-      disabled: isDisabled,
-      onClick: onClick,
-      type: href ? undefined : type, // Only set type for button element
-      ...rest,
-    };
-
-    if (href) {
-      Object.assign(elementProps, {
-        href: href,
-        target: "_blank",
-        rel: "noopener noreferrer",
-      });
-      delete elementProps.disabled; // Anchor tags don't use the disabled attribute
-    } else {
-      delete elementProps.href;
-      delete elementProps.target;
-      delete elementProps.rel;
+    if (finalVariant === "link" && href && !disabled) {
+      return (
+        <a
+          ref={ref as React.Ref<HTMLAnchorElement>}
+          href={href}
+          className={computedClassName}
+          style={mergedStyles}
+          aria-label={
+            alt || (typeof finalChildren === "string" ? finalChildren : "Link")
+          }
+          role="link"
+        >
+          {renderIcon()}
+          {finalChildren && <span>{finalChildren}</span>}
+        </a>
+      );
     }
 
-    return <Element {...(elementProps as any)}>{content}</Element>;
+    return (
+      <button
+        ref={ref as React.Ref<HTMLButtonElement>}
+        type={htmlType}
+        disabled={disabled}
+        className={computedClassName}
+        style={mergedStyles}
+        aria-label={
+          typeof finalChildren === "string" ? finalChildren : "Button"
+        }
+        {...props}
+      >
+        {renderIcon()}
+        {finalChildren && <span>{finalChildren}</span>}
+      </button>
+    );
   }
 );
 
 Button.displayName = "Button";
-
-export { Button, ButtonGroup };

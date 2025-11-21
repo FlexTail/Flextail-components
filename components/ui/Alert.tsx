@@ -1,3 +1,5 @@
+// --- Alert.tsx  ---
+
 "use client";
 
 import React, { forwardRef, ReactElement, JSXElementConstructor } from "react";
@@ -15,7 +17,7 @@ import {
   DangerIcon,
   COLOR_MAPS,
   iconSizeStyles,
-} from "../config/flextail-utils";
+} from "../utils/FlexTail-config";
 
 type CustomShape = "rounded-full" | "default";
 

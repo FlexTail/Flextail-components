@@ -6,9 +6,9 @@
     "deps": [],
     "files": [
       {
-        "name": "flextail-utils.ts",
-        "target_path": "components/config/flextail-utils.ts",
-        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/config/flextail-utils.ts"
+        "name": "FlexTail-config.ts",
+        "target_path": "utils/FlexTail-config.ts",
+        "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/utils/FlexTail-config.ts"
       }
     ]
   },
@@ -16,11 +16,11 @@
     "name": "button",
     "type": "components:ui",
     "description": "A button and anchor component for user interaction.",
-    "deps": ["flextail-utils"],
+    "deps": ["FlexTail-utils"],
     "files": [
       {
         "name": "Button.tsx",
-        "target_path": "components/ui/Button.tsx",
+        "target_path": "ui/Button.tsx",
         "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/ui/Button.tsx"
       }
     ]
@@ -29,11 +29,11 @@
     "name": "alert",
     "type": "components:ui",
     "description": "A block for displaying status messages, warnings, or confirmations.",
-    "deps": ["flextail-utils", "button"],
+    "deps": ["FlexTail-utils", "button"],
     "files": [
       {
         "name": "Alert.tsx",
-        "target_path": "components/ui/Alert.tsx",
+        "target_path": "ui/Alert.tsx",
         "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/ui/Alert.tsx"
       }
     ]
@@ -42,11 +42,11 @@
     "name": "notfound",
     "type": "components:layout",
     "description": "A 404 Not Found Page.",
-    "deps": ["flextail-utils", "button"],
+    "deps": ["FlexTail-utils", "button"],
     "files": [
       {
         "name": "NotFound.tsx",
-        "target_path": "components/layouts/NotFound.tsx",
+        "target_path": "layouts/NotFound.tsx",
         "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/layouts/NotFound.tsx"
       }
     ]
@@ -55,11 +55,11 @@
     "name": "card",
     "type": "components:ui",
     "description": "A content container that includes a primary action button.",
-    "deps": ["flextail-utils", "button", "alertdialog"],
+    "deps": ["FlexTail-utils", "button", "alertdialog"],
     "files": [
       {
         "name": "Card.tsx",
-        "target_path": "components/ui/Card.tsx",
+        "target_path": "ui/Card.tsx",
         "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/ui/Card.tsx"
       }
     ]
@@ -72,7 +72,7 @@
     "files": [
       {
         "name": "AlertDialog.tsx",
-        "target_path": "components/ui/AlertDialog.tsx",
+        "target_path": "ui/AlertDialog.tsx",
         "content_url": "https://raw.githubusercontent.com/FlexTail/Flextail-components/main/components/ui/AlertDialog.tsx"
       }
     ]

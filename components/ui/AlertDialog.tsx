@@ -1,255 +1,33 @@
+// --- AlertDialog.tsx  ---
+
+"use client";
+
 import React, {
   forwardRef,
-  useState,
   useEffect,
   useRef,
   useCallback,
-  useMemo,
   type HTMLAttributes,
   type ReactNode,
-  type ReactElement,
 } from "react";
-import { twMerge } from "tailwind-merge";
 
-type ClassValue =
-  | string
-  | number
-  | ClassValue[]
-  | { [key: string]: boolean }
-  | null
-  | undefined;
-type ButtonVariant =
-  | "primary"
-  | "secondary"
-  | "subtle"
-  | "outline"
-  | "ghost"
-  | "link";
-type ButtonShape = "square" | "rounded" | "squircle" | "circle";
-type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
-type ButtonColor =
-  | "blue"
-  | "green"
-  | "red"
-  | "yellow"
-  | "gray"
-  | "indigo"
-  | "pink"
-  | "purple"
-  | "cyan";
+import { cn } from "../utils/flextail-config";
+import type { ButtonVariant, ColorKey } from "../utils/flextail-config";
+import { Button } from "./Button";
+import { X } from "lucide-react";
 
-function cn(...inputs: ClassValue[]) {
-  const clsx = (input: ClassValue): string => {
-    if (typeof input === "string") return input;
-    if (Array.isArray(input)) {
-      return input.map(clsx).filter(Boolean).join(" ");
-    }
-    if (typeof input === "object" && input !== null) {
-      return Object.entries(input)
-        .filter(([, value]) => !!value)
-        .map(([key]) => key)
-        .join(" ");
-    }
-    return "";
-  };
-  return twMerge(clsx(inputs));
-}
-
-const LoadingSpinnerSVG = ({
-  className = "h-5 w-5",
-}: {
-  className?: string;
-}) => (
-  <svg
-    className={cn("animate-spin", className)}
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-  >
-    <circle
-      className="opacity-25"
-      cx="12"
-      cy="12"
-      r="10"
-      stroke="currentColor"
-      strokeWidth="4"
-    ></circle>
-    <path
-      className="opacity-75"
-      fill="currentColor"
-      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-    ></path>
-  </svg>
-);
-const X = ({ className = "h-5 w-5" }: { className?: string }) => (
-  <svg
-    className={className}
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={2.5}
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M6 18L18 6M6 6l12 12"
-    />
-  </svg>
-);
-
-interface ButtonProps extends HTMLAttributes<HTMLButtonElement> {
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-  color?: ButtonColor;
-  shape?: ButtonShape;
-  loading?: boolean;
-  disabled?: boolean;
-  icon?: ReactElement;
-  iconPosition?: "left" | "right";
-}
-
-const getButtonClasses = ({
-  variant = "primary",
-  size = "md",
-  color = "blue",
-  shape = "rounded",
-  loading,
-  disabled,
-}: Omit<ButtonProps, "children">): string => {
-  const base =
-    "font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2";
-
-  const sizeClasses = {
-    xs: "h-6 px-2 text-xs",
-    sm: "h-8 px-3 text-sm",
-    md: "h-10 px-4 text-sm",
-    lg: "h-12 px-6 text-base",
-    xl: "h-14 px-8 text-lg",
-  };
-
-  const shapeClasses = {
-    square: "rounded-lg",
-    rounded: "rounded-full",
-    squircle: "rounded-xl",
-    circle: "rounded-full aspect-square p-0",
-  };
-
-  const colorMap = {
-    blue: {
-      primary:
-        "bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500",
-      secondary:
-        "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-100 dark:hover:bg-blue-700",
-      danger:
-        "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500",
-    },
-  };
-
-  const variantMap = {
-    primary: colorMap[color]?.primary || colorMap.blue.primary,
-    secondary: colorMap[color]?.secondary || colorMap.blue.secondary,
-    subtle:
-      "bg-transparent text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700",
-    outline:
-      "bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700",
-    ghost:
-      "bg-transparent text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400",
-    link: "bg-transparent text-blue-600 hover:text-blue-700 underline dark:text-blue-400 dark:hover:text-blue-300",
-  };
-
-  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
-
-  const finalVariantClass = variantMap[variant] || variantMap.primary;
-
-  return cn(
-    base,
-    sizeClasses[size],
-    shapeClasses[shape],
-    finalVariantClass,
-    disabledClasses,
-    loading ? "pointer-events-none" : ""
-  );
-};
-
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      children,
-      className,
-      variant = "primary",
-      size = "md",
-      color = "blue",
-      shape = "rounded",
-      loading,
-      disabled,
-      icon,
-      iconPosition = "left",
-      onClick,
-      ...rest
-    },
-    ref
-  ) => {
-    const isDisabled = disabled || loading;
-    const finalClassName = cn(
-      getButtonClasses({
-        variant,
-        size,
-        color,
-        shape,
-        loading,
-        disabled: isDisabled,
-      }),
-      className,
-      "flex items-center justify-center"
-    );
-
-    const renderIcon = () => {
-      if (loading) {
-        const spinnerClass = cn(
-          "h-4 w-4",
-          variant === "primary" || color === "red"
-            ? "text-white"
-            : "text-current"
-        );
-        return <LoadingSpinnerSVG className={spinnerClass} />;
-      }
-      return icon;
-    };
-
-    const iconElement = renderIcon();
-
-    return (
-      <button
-        ref={ref}
-        className={finalClassName}
-        disabled={isDisabled}
-        onClick={onClick}
-        {...rest}
-      >
-        <div className={cn("flex items-center gap-2")}>
-          {iconElement && iconPosition === "left" && iconElement}
-          {children && <span>{children}</span>}
-          {iconElement && iconPosition === "right" && iconElement}
-        </div>
-      </button>
-    );
-  }
-);
-Button.displayName = "Button";
-
-interface AlertDialogAction {
+export interface AlertDialogAction {
   label: string;
   onClick: () => void;
   variant?: ButtonVariant;
-  color?: ButtonColor;
+  color?: ColorKey;
   loading?: boolean;
   disabled?: boolean;
   isDefault?: boolean;
   isDestructive?: boolean;
 }
 
-interface AlertDialogProps extends HTMLAttributes<HTMLDivElement> {
+export interface AlertDialogProps extends HTMLAttributes<HTMLDivElement> {
   isOpen: boolean;
   onClose: () => void;
   title: ReactNode;
@@ -270,7 +48,9 @@ const AlertDialog = forwardRef<HTMLDivElement, AlertDialogProps>(
           if (typeof forwardedRef === "function") {
             forwardedRef(node);
           } else if (forwardedRef) {
-            forwardedRef.current = node;
+            (
+              forwardedRef as React.MutableRefObject<HTMLDivElement | null>
+            ).current = node;
           }
         }
       },
@@ -284,9 +64,7 @@ const AlertDialog = forwardRef<HTMLDivElement, AlertDialogProps>(
     }, [onClose]);
 
     useEffect(() => {
-      if (!isOpen) {
-        return;
-      }
+      if (!isOpen) return;
 
       triggerElementRef.current = document.activeElement as HTMLElement | null;
 
@@ -295,7 +73,7 @@ const AlertDialog = forwardRef<HTMLDivElement, AlertDialogProps>(
           handleClose();
         } else if (event.key === "Tab" && dialogRef.current) {
           const focusableElements = dialogRef.current.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
           ) as NodeListOf<HTMLElement>;
 
           if (focusableElements.length === 0) return;
@@ -325,7 +103,7 @@ const AlertDialog = forwardRef<HTMLDivElement, AlertDialogProps>(
             '[data-default="true"]'
           ) as HTMLButtonElement;
           const focusable = dialogRef.current.querySelector(
-            "button, [href], input, select, textarea"
+            "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])"
           ) as HTMLElement;
 
           if (defaultButton) {
@@ -379,13 +157,12 @@ const AlertDialog = forwardRef<HTMLDivElement, AlertDialogProps>(
         >
           <Button
             variant="ghost"
-            shape="circle"
+            color="gray"
+            icon={<X className="h-4 w-4" />}
             size="sm"
             onClick={handleClose}
             className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          ></Button>
 
           <h2
             id="alert-dialog-title"
@@ -405,7 +182,7 @@ const AlertDialog = forwardRef<HTMLDivElement, AlertDialogProps>(
             {actions.map((action, index) => {
               const buttonVariant = action.isDestructive
                 ? "primary"
-                : action.variant || "outline";
+                : action.variant || "secondary";
               const buttonColor = action.isDestructive
                 ? "red"
                 : action.color || "gray";
@@ -437,3 +214,5 @@ const AlertDialog = forwardRef<HTMLDivElement, AlertDialogProps>(
 );
 
 AlertDialog.displayName = "AlertDialog";
+
+export default AlertDialog;
