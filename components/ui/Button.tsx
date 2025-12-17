@@ -1,15 +1,103 @@
 "use client";
 
-import React from "react";
+import React, { createContext, useContext, forwardRef } from "react";
 import { Check, X, AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
 import {
   type TailwindColor,
-  BUTTON_SIZES,
   ROUNDED_VALUES,
   getColorClass,
-  ICON_SIZES,
   cn,
 } from "../utils/FlexTail-config";
+
+// --- Group Context Types and Setup ---
+
+type GroupDirection = "vertical" | "horizontal";
+type GroupPosition = "first" | "middle" | "last" | "none";
+
+interface ButtonGroupContextProps {
+  isGrouped: boolean;
+  groupDirection: GroupDirection;
+  groupRadius: keyof typeof ROUNDED_VALUES | string;
+  groupPosition: GroupPosition;
+  groupColor?: TailwindColor | string;
+  groupVariant?: string;
+  groupActiveColor?: TailwindColor | string;
+}
+
+const defaultContext: ButtonGroupContextProps = {
+  isGrouped: false,
+  groupDirection: "horizontal",
+  groupRadius: "md",
+  groupPosition: "none",
+};
+
+export const ButtonGroupContext =
+  createContext<ButtonGroupContextProps>(defaultContext);
+
+// --- Button Group Component ---
+
+interface ButtonGroupProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
+  direction?: GroupDirection;
+  radius?: keyof typeof ROUNDED_VALUES | string;
+  color?: TailwindColor | string;
+  variant?: string;
+  activeColor?: TailwindColor | string;
+}
+
+export const ButtonGroup: React.FC<ButtonGroupProps> = ({
+  children,
+  direction = "horizontal",
+  radius = "md",
+  color,
+  variant,
+  activeColor,
+  className,
+  ...props
+}) => {
+  const childrenArray = React.Children.toArray(children).filter(
+    React.isValidElement
+  );
+
+  const containerClasses = cn(
+    "flex",
+    direction === "vertical" ? "flex-col" : "flex-row",
+    className
+  );
+
+  return (
+    <div className={containerClasses} role="group" {...props}>
+      {childrenArray.map((child, index) => {
+        let position: GroupPosition = "middle";
+        if (index === 0) {
+          position = "first";
+        } else if (index === childrenArray.length - 1) {
+          position = "last";
+        }
+
+        const contextValue: ButtonGroupContextProps = {
+          isGrouped: true,
+          groupDirection: direction,
+          groupRadius: radius,
+          groupPosition: position,
+          groupColor: color,
+          groupVariant: variant,
+          groupActiveColor: activeColor,
+        };
+
+        return (
+          <ButtonGroupContext.Provider key={index} value={contextValue}>
+            {child}
+          </ButtonGroupContext.Provider>
+        );
+      })}
+    </div>
+  );
+};
+
+ButtonGroup.displayName = "ButtonGroup";
+
+// --- Button Types and Presets ---
 
 type ButtonVariant =
   | "primary"
@@ -26,10 +114,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   color?: TailwindColor | string;
   variant?: ButtonVariant;
   disabled?: boolean;
-  size?: keyof typeof BUTTON_SIZES;
   radius?: keyof typeof ROUNDED_VALUES | string;
-  groupPosition?: "left" | "right" | "middle";
-  groupDirection?: "vertical" | "horizontal";
   active?: boolean;
   activeColor?: TailwindColor | string;
   href?: string;
@@ -71,7 +156,9 @@ const PRESETS: Record<string, Partial<ButtonProps>> = {
   },
 };
 
-export const Button = React.forwardRef<
+// --- Button Component ---
+
+export const Button = forwardRef<
   HTMLButtonElement | HTMLAnchorElement,
   ButtonProps
 >(
@@ -80,10 +167,7 @@ export const Button = React.forwardRef<
       color = "indigo",
       variant = "primary",
       disabled = false,
-      size = "md",
       radius = "md",
-      groupPosition,
-      groupDirection = "horizontal",
       active = false,
       activeColor,
       href,
@@ -100,27 +184,46 @@ export const Button = React.forwardRef<
     },
     ref
   ) => {
-    const activeConfig = preset
-      ? { ...PRESETS[preset] }
-      : { color, variant, children, icon: IconProp, iconPosition };
+    const groupContext = useContext(ButtonGroupContext);
+    const {
+      isGrouped,
+      groupPosition,
+      groupDirection,
+      groupRadius,
+      groupColor,
+      groupVariant,
+      groupActiveColor,
+    } = groupContext;
 
-    // Active State Management
-    const isGrouped = !!groupPosition;
+    const presetConfig = preset ? PRESETS[preset] : {};
+
+    const baseColor = presetConfig.color || groupColor || color;
+    const baseVariant = presetConfig.variant || groupVariant || variant;
+    const baseActiveColor = groupActiveColor || activeColor;
+
+    const activeConfig = {
+      color: baseColor,
+      variant: baseVariant,
+      children: presetConfig.children || children,
+      icon: presetConfig.icon || IconProp,
+      iconPosition: presetConfig.iconPosition || iconPosition,
+    };
+
     const isActiveState = active && isGrouped;
 
-    let finalColor = activeConfig.color || color;
-    let finalVariant = activeConfig.variant || variant;
+    let finalColor = activeConfig.color;
+    let finalVariant = activeConfig.variant;
 
     if (isActiveState) {
-      if (activeColor) finalColor = activeColor;
+      if (baseActiveColor) finalColor = baseActiveColor;
       if (finalVariant !== "binary" && finalVariant !== "grayscale") {
         finalVariant = "primary";
       }
     }
 
-    const finalChildren = activeConfig.children || children;
-    const FinalIcon = activeConfig.icon || IconProp;
-    const finalIconPos = activeConfig.iconPosition || iconPosition;
+    const finalChildren = activeConfig.children;
+    const FinalIcon = activeConfig.icon;
+    const finalIconPos = activeConfig.iconPosition;
 
     const { className: colorClasses, style: colorStyles } = getColorClass(
       finalColor as string,
@@ -129,35 +232,56 @@ export const Button = React.forwardRef<
 
     const isVertical = groupDirection === "vertical";
 
+    const effectiveRadius = isGrouped ? groupRadius : radius;
+
+    const baseRadiusClass =
+      ROUNDED_VALUES[effectiveRadius as keyof typeof ROUNDED_VALUES] ||
+      `rounded-[${effectiveRadius}]`;
+
     const radiusClass = (() => {
-      if (groupPosition === "middle") return "rounded-none";
-      const baseRadius =
-        ROUNDED_VALUES[radius as keyof typeof ROUNDED_VALUES] ||
-        `rounded-[${radius}]`;
-      if (groupPosition === "left")
-        return isVertical ? "rounded-b-none" : "rounded-r-none";
-      if (groupPosition === "right")
-        return isVertical ? "rounded-t-none" : "rounded-l-none";
-      return baseRadius;
+      if (!isGrouped) return baseRadiusClass;
+
+      const baseReset = "rounded-none";
+      const radiusSuffix = baseRadiusClass.replace("rounded-", "");
+
+      if (groupPosition === "middle") return baseReset;
+
+      if (groupPosition === "first") {
+        return isVertical
+          ? `${baseReset} rounded-t-${radiusSuffix}`
+          : `${baseReset} rounded-l-${radiusSuffix}`;
+      }
+
+      if (groupPosition === "last") {
+        return isVertical
+          ? `${baseReset} rounded-b-${radiusSuffix}`
+          : `${baseReset} rounded-r-${radiusSuffix}`;
+      }
+
+      return baseReset;
     })();
 
     const groupSpacing = (() => {
-      if (!groupPosition) return "";
+      if (!isGrouped) return "";
+
       if (groupPosition === "middle")
-        return isVertical ? "border-y-0 my-0" : "border-x-0 mx-0";
-      if (groupPosition === "left")
+        return isVertical ? "-mt-[1px]" : "-ml-[1px]";
+
+      if (groupPosition === "first")
         return isVertical ? "mb-0 border-b-0" : "mr-0 border-r-0";
-      if (groupPosition === "right")
-        return isVertical ? "mt-0 border-t-0" : "ml-0 border-l-0";
+
       return "";
     })();
 
     const baseStyles =
-      "inline-flex items-center justify-center font-medium transition-all duration-300 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
-    const sizeClasses =
-      BUTTON_SIZES[size as keyof typeof BUTTON_SIZES] || "p-3";
-    const iconSizeStyle =
-      iconSize || ICON_SIZES[size as keyof typeof ICON_SIZES] || "1rem";
+      "inline-flex items-center justify-center font-medium transition-all duration-300 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none relative";
+
+    const responsiveSizeClasses =
+      "px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base lg:px-6 lg:py-3.5 lg:text-lg";
+
+    const iconSizeStyle = iconSize || "1.25rem";
+    const gapSize = "gap-1.5 sm:gap-2";
+
     const flexDirection =
       finalIconPos === "top"
         ? "flex-col"
@@ -166,11 +290,10 @@ export const Button = React.forwardRef<
         : finalIconPos === "right"
         ? "flex-row-reverse"
         : "flex-row";
-    const gapSize = size === "xs" ? "gap-1.5" : "gap-2";
 
     const computedClassName = cn(
       baseStyles,
-      sizeClasses,
+      responsiveSizeClasses,
       radiusClass,
       disabled
         ? "bg-neutral-200 text-neutral-400 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-600 dark:border-neutral-800 shadow-none"
@@ -180,6 +303,8 @@ export const Button = React.forwardRef<
       gapSize,
       isActiveState
         ? "z-10 relative ring-2 ring-offset-1 ring-transparent"
+        : isGrouped
+        ? "z-0"
         : "",
       className
     );
@@ -196,7 +321,6 @@ export const Button = React.forwardRef<
         animation: preset === "loading" ? "spin 1s linear infinite" : "none",
       };
 
-      // 1. React Element (e.g., <Star />)
       if (React.isValidElement(FinalIcon)) {
         return React.cloneElement(FinalIcon as React.ReactElement<any>, {
           style: { ...commonStyles, ...(FinalIcon.props as any).style },
@@ -205,7 +329,6 @@ export const Button = React.forwardRef<
         });
       }
 
-      // 2. Component Function (e.g., Star)
       if (typeof FinalIcon === "function") {
         const IconComp = FinalIcon as React.ElementType;
         return (
@@ -217,7 +340,6 @@ export const Button = React.forwardRef<
         );
       }
 
-      // 3. Image URL (String)
       return (
         <img
           src={FinalIcon as string}
