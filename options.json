@@ -1,0 +1,53 @@
+{
+  "fontStrategies": [
+    {
+      "title": "Next.js Fonts",
+      "value": "next",
+      "description": "Optimized via next/font"
+    },
+    {
+      "title": "Standard CSS",
+      "value": "standard",
+      "description": "Global @font-face imports"
+    },
+    {
+      "title": "Variable Fonts",
+      "value": "variable",
+      "description": "Modern Tailwind variables"
+    }
+  ],
+  "stylePresets": [
+    {
+      "title": "Glassmorphism",
+      "value": "glass",
+      "description": "Translucent and frosted effects"
+    },
+    {
+      "title": "Neobrutalism",
+      "value": "brutal",
+      "description": "Bold borders and high contrast"
+    },
+    {
+      "title": "Minimalist",
+      "value": "minimal",
+      "description": "Clean whitespace and subtle grays"
+    }
+  ],
+  "iconLibraries": [
+    {
+      "title": "Lucide React",
+      "value": "lucide-react",
+      "description": "Clean, consistent icons"
+    },
+    {
+      "title": "Heroicons",
+      "value": "@heroicons/react",
+      "description": "Official Tailwind icons"
+    },
+    {
+      "title": "Phosphor Icons",
+      "value": "@phosphor-icons/react",
+      "description": "6 distinct weights"
+    }
+  ]
+}
